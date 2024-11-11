@@ -1,3 +1,5 @@
+# import sys
+# print(sys.executable)
 import cv2 as cv
 import numpy as np
 
@@ -10,7 +12,7 @@ def rescale_frame(frame: np.ndarray, scale: float = 0.75):
 
     return cv.resize(frame, dimensions, interpolation= cv.INTER_AREA)
 
-def changeRes(width: int, height: int):
+def changeRes(capture: cv.VideoCapture, width: int, height: int):
     """Only works for live videos (webcam)"""
     capture.set(3, width) # number is property. 3 is width, 4 is height
     capture.set(4, height)
@@ -20,36 +22,56 @@ def addText(frame: np.ndarray, text: str, origin: tuple[int, int], colour: tuple
     cv.putText(frame, text, origin, cv.FONT_HERSHEY_TRIPLEX, scale, colour, thickness)
 
 ## ************************** OTHER STUFF ****************************************
-# gets a path to image and returns a matrix of pixels
-# img = cv.imread("./nekosan.jpg")
-capture = cv.VideoCapture(0)
 
-if not capture.isOpened():
-    print("Error: could not open webcam")
-    exit()
+def captureVideo() -> None:
+    """ Capture webcam video """
+    capture = cv.VideoCapture(0)
 
-while True:
-    ret, frame = capture.read()
-    if not ret:
-        print("Error: Failed to capture frame.")
-        break
+    if not capture.isOpened():
+        print("Error: could not open webcam")
+        exit()
+
+    while True:
+        ret, frame = capture.read()
+        if not ret:
+            print("Error: Failed to capture frame.")
+            break
+
+        # rescale image
+        frames = rescale_frame(frame, 0.5) # try to change resolution instead
+
+        # add "Hello" onto the image
+        addText(frames, "Hello", (255, 255), (0, 255, 0))
+
+        # display image as new window
+        cv.imshow('Neko', frames)
+
+        # keyboard binding (ms)-> 0 means it waits infinite amount of time for key to be pressed
+        # cv.waitKey(0)
+
+        # Wait for a key press, exit on 'q'
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release the capture object and close windows
+    capture.release()
+    cv.destroyAllWindows()
+
+
+def printImage() -> None:
+    """ prints out an image """
+    # gets a path to image and returns a matrix of pixels
+    img = cv.imread("./nekosan.jpg")
 
     # rescale image
-    frames = rescale_frame(frame, 0.5)
+    img = rescale_frame(img, 0.25) # try to change resolution instead
 
     # add "Hello" onto the image
-    addText(frames, "Hello", (255, 255), (0, 255, 0))
+    addText(img, "Hello", (255, 255), (0, 255, 0))
 
     # display image as new window
-    cv.imshow('Neko', frames)
+    cv.imshow('Neko', img)
 
-    # keyboard binding (ms)-> 0 means it waits infinite amount of time for key to be pressed
-    # cv.waitKey(0)
+    cv.waitKey(0)
 
-    # Wait for a key press, exit on 'q'
-    if cv.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Release the capture object and close windows
-capture.release()
-cv.destroyAllWindows()
+printImage()

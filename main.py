@@ -30,6 +30,8 @@ def captureVideo() -> None:
     if not capture.isOpened():
         print("Error: could not open webcam")
         exit()
+    
+    changeRes(capture, 640, 480) # change resolution of camera
 
     while True:
         ret, frame = capture.read()
@@ -37,14 +39,11 @@ def captureVideo() -> None:
             print("Error: Failed to capture frame.")
             break
 
-        # rescale image
-        frames = rescale_frame(frame, 0.5) # try to change resolution instead
-
         # add "Hello" onto the image
-        addText(frames, "Hello", (255, 255), (0, 255, 0))
+        addText(frame, "Hello", (255, 255), (0, 255, 0))
 
         # display image as new window
-        cv.imshow('Neko', frames)
+        cv.imshow('Neko', frame)
 
         # keyboard binding (ms)-> 0 means it waits infinite amount of time for key to be pressed
         # cv.waitKey(0)

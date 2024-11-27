@@ -24,8 +24,18 @@ classes = {
 }
 
 ## *************************** FUNCTION CALLS -> private & helper functions ************************************
-def rescale_frame(frame: np.ndarray, width: int = 224, height: int = 224) -> np.ndarray:
+
+def rescaleFrame(frame: np.ndarray, scale: float = 0.75) -> np.ndarray:
     """ Takes a frame and scales it by certain size (default 0.75). works for images, videos, and live videos"""
+    width = int(frame.shape[1] * scale) # width of image
+    height = int(frame.shape[0] * scale) # height of image
+    dimensions = (width, height)
+
+    return cv.resize(frame, dimensions, interpolation= cv.INTER_AREA)
+
+# MIGHT NEED TO CHANGE THIS LATER INCASE VALUE IS NOT JUST A SQUARE
+def modelFrameSize(frame: np.ndarray, width: int = 224, height: int = 224) -> np.ndarray:
+    """ Takes a frame or image and scales it to be 224 by 224 (max) for the model to process """
     dimensions = (width, height)
     return cv.resize(frame, dimensions, interpolation = cv.INTER_AREA)
 
@@ -91,28 +101,33 @@ def printImage() -> None:
             print("Error: image not found")
             return 
     except Exception as e:
-        print(f"Error loading the image: {e}")  
+        print(f"Error loading the image: {e}")
+        return   
 
-    # rescale image
-    img = rescale_frame(img, 224, 224)
-    img = normalizePixels(img) 
-    img = addExtraDimension(img)
+    # rescale image -> create a frame version for just the model to test on
+    imgModel = modelFrameSize(img, 224, 224) # change to 224 by 224 -> required by model
+    imgModel = normalizePixels(imgModel) # normalize pixels (0 to 1 value)
+    imgModel = addExtraDimension(imgModel) # add an extra dimension
 
     try:
-        # get prediction from model
-        prediction = model(img)
+        # get prediction from model -> using copy of image that is changed
+        prediction = model(imgModel)
         predictionKey = np.argmax(prediction.numpy())
-        # Get the class name
         predictedClass = classes[predictionKey + 1]
         print("Prediction done by model on image by percentage: ", prediction)
         print("Prediction done by model final result: ", predictedClass)
+
+        # print original image
+        img = rescaleFrame(img, scale=2.0)
+        textCoordinates = (int(img.shape[1] * 0.05), int(img.shape[0] * 0.1))
+        addText(img, predictedClass, textCoordinates, (0, 255, 0))
+        # display image as new window
+        cv.imshow('ASL', img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+  
     except Exception as e:
         print(f"Error during prediction: {e}")
-
-    # display image as new window
-    cv.imshow('A ASL', (img[0] * 255).astype(np.uint8))  # Convert back to 0-255 range and remove batch dimension
-    cv.waitKey(0)
-    cv.destroyAllWindows()
 
 printImage()
 # captureVideo()

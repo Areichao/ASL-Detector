@@ -62,28 +62,6 @@ def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
 
-def createHandMask(frame: np.ndarray) -> np.ndarray:
-    """
-    Creates a black-and-white mask to isolate the hand based on skin color in the frame.
-    """
-    # Convert to HSV color space
-    hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-
-    # Define skin color range in HSV
-    lower_skin = np.array([0, 20, 70], dtype=np.uint8)
-    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
-
-    # Create a binary mask where skin color falls within the range
-    skin_mask = cv.inRange(hsv_frame, lower_skin, upper_skin)
-
-    # Apply morphological operations to clean up the mask
-    kernel = np.ones((5, 5), np.uint8)
-    skin_mask = cv.morphologyEx(skin_mask, cv.MORPH_CLOSE, kernel)
-
-    return skin_mask
-
-
-
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
     """Capture webcam video and classify ASL letters with improved hand isolation."""

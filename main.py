@@ -1,6 +1,10 @@
 import cv2 as cv
 import numpy as np
 import tensorflow_hub as hub 
+import threading
+
+# queue for threading
+from queue import Queue
 
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:
@@ -25,9 +29,11 @@ def main() -> None:
         26: 'Z', 27: 'del', 28: 'space', 29: 'nothing'
     }
 
+    frameQ = Queue(maxsize=5)
+
     ## **************************** APPLICATION CALL **********************************************
     # printImage(model, classes)
-    captureVideo(model, classes)
+    captureVideo(model, classes, frameQ)
 
 ## *************************** FUNCTION CALLS -> private & helper functions ************************************
 
@@ -78,23 +84,60 @@ def drawRectangle(frame: np.ndarray) -> tuple[int, int, int, int]:
 
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
-def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
-    """ Capture webcam video """
+
+def videoThreading(video: cv.VideoCapture, frameQ: Queue) -> None:
+    """ gets frames from video and throws them into queue for threading """
+    ## CHATGPT CODE
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            print("Error: Failed to capture frame.")
+            break
+        if frameQ.full():
+            frameQ.get()  # Remove the oldest frame if the queue is full
+        frameQ.put(frame)
+
+def captureVideo(model: hub.KerasLayer, classes: dict, frameQ: Queue) -> None:
+    """ combines video capture with threading and processing """
     try:
         capture = cv.VideoCapture(0)
         # error if video is not opened
         if not capture.isOpened():
             print("Error: could not open webcam")
-            return 
-    
-        changeRes(capture, 640, 480) # change resolution of camera
+            return         
+        
+        changeRes(capture, 480, 340) # change resolution of camera
 
+        # Start video capture thread
+        capture_thread = threading.Thread(target=videoThreading, args=(capture, frameQ))
+        capture_thread.daemon = True  # Daemonize the thread to automatically exit when the program exits
+        capture_thread.start()
+
+        # Start prediction processing thread
+        prediction_thread = threading.Thread(target=videoClassification, args=(model, classes, frameQ))
+        prediction_thread.daemon = True  # Daemonize the thread
+        prediction_thread.start()
+
+        # Keep the main thread alive
         while True:
-            ret, frame = capture.read()
-            if not ret:
-                print("Error: Failed to capture frame.")
+            if cv.waitKey(1) & 0xFF == ord('q'):
                 break
 
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    finally:
+        capture.release()
+        cv.destroyAllWindows()
+
+def videoClassification(model: hub.KerasLayer, classes: dict, frameQ: Queue) -> None:
+    """ classifies frames from video and prints output """
+    # count = 0 # count number of frames that are being processed
+    while True:
+        if not frameQ.empty():
+            frame = frameQ.get() # get the front of the queue
+
+            # define box dimensions
             top_left_x, top_left_y, bottom_right_x, bottom_right_y = drawRectangle(frame)
 
             # create a frame just for model to extract information from
@@ -117,9 +160,12 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
 
                 # Draw the bounding box on the frame
                 cv.rectangle(frame, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 2)
-
-                # display image as new window
-                cv.imshow('ASL', frame)
+                
+                # if count % 5 == 0:
+                #     # display image as new window
+                #     cv.imshow('ASL', frame)
+                
+                # count += 1 # count up number of frames
 
                 # keyboard binding (ms)-> 0 means it waits infinite amount of time for key to be pressed
                 # cv.waitKey(0)
@@ -130,13 +176,8 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
             except Exception as e:
                 print(f"Error during prediction: {e}")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-    finally:
-        # Release the capture object and close windows
-        capture.release()
-        cv.destroyAllWindows()
+            finally:
+                cv.destroyAllWindows()  # Close all OpenCV windows properly
 
 
 def printImage(model: hub.KerasLayer, classes: dict) -> None:

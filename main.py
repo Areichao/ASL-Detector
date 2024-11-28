@@ -4,9 +4,7 @@ import torch
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import mediapipe as mp
-import logging
 
-logging.getLogger("transformers").setLevel(logging.ERROR)
 
 # *************************** MODEL IMPORTING ************************************
 def main() -> None:
@@ -142,6 +140,46 @@ def captureVideo(model, processor, classes) -> None:
     finally:
         capture.release()
         cv.destroyAllWindows()
+
+
+## CAN IGNORE THIS FUNCTION, TESTED MODEL ON STATIC IMAGE FOR TESTINGS SAKE
+def printImage(model, classes) -> None:
+    """ prints out an image and runs classification function on it"""
+    # gets a path to image and returns a matrix of pixels
+    try:
+        imgPath = './testImages/'
+        img = cv.imread(imgPath + "A.png")
+        if img is None:
+            print("Error: image not found")
+            return 
+    except Exception as e:
+        print(f"Error loading the image: {e}")
+        return   
+
+    # rescale image -> create a frame version for just the model to test on
+    imgModel = modelFrameSize(img, 224, 224) # change to 224 by 224 -> required by model
+    imgModel = normalizePixels(imgModel) # normalize pixels (0 to 1 value)
+    imgModel = addExtraDimension(imgModel) # add an extra dimension
+
+    try:
+        # get prediction from model -> using copy of image that is changed
+        prediction = model(imgModel)
+        predictionKey = np.argmax(prediction.numpy())
+        predictedClass = classes[predictionKey + 1]
+        print("Prediction done by model on image by percentage: ", prediction)
+        print("Prediction done by model final result: ", predictedClass)
+
+        # print original image
+        img = rescaleFrame(img, scale=2.0)
+        textCoordinates = (int(img.shape[1] * 0.05), int(img.shape[0] * 0.1))
+        addText(img, predictedClass, textCoordinates, (0, 255, 0))
+        # display image as new window
+        cv.imshow('ASL', img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+  
+    except Exception as e:
+        print(f"Error during prediction: {e}")
 
 # ****************************** RUNNING MAIN FUNCTION ********************************
 if __name__ == "__main__":

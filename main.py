@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import tensorflow_hub as hub 
+import mediapipe as mp
 
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:

@@ -62,6 +62,20 @@ def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
 
+def drawRectangle(frame: np.ndarray) -> tuple[int, int, int, int]:
+    """ draws a rectangle around the models subject """
+
+    #### CHATGPT CODE, NEED TO CHANGE THIS !!!!!!!!!!!!!!!
+    # Define the Region of Interest (ROI) box coordinates
+    height, width, _ = frame.shape
+    box_size = 224  # The size of the box
+    top_left_x = (width - box_size) // 2
+    top_left_y = (height - box_size) // 2
+    bottom_right_x = top_left_x + box_size
+    bottom_right_y = top_left_y + box_size
+
+    return (top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
@@ -81,9 +95,11 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
                 print("Error: Failed to capture frame.")
                 break
 
-            # run the model here (create new instance of the frame)
-            # rescale image -> create a frame version for just the model to test on
-            frameModel = modelFrameSize(frame, 224, 224) # change to 224 by 224 -> required by model
+            top_left_x, top_left_y, bottom_right_x, bottom_right_y = drawRectangle(frame)
+
+            # create a frame just for model to extract information from
+            roi = frame[top_left_y:bottom_right_y, top_left_x:bottom_right_x]
+            frameModel = modelFrameSize(roi, 224, 224)  # change to 224 by 224 -> required by model
             frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
             frameModel = addExtraDimension(frameModel) # add an extra dimension
 
@@ -98,6 +114,9 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
                 # display original frame & add Text 
                 textCoordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
                 addText(frame, predictedClass, textCoordinates, (0, 255, 0))
+
+                # Draw the bounding box on the frame
+                cv.rectangle(frame, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 2)
 
                 # display image as new window
                 cv.imshow('ASL', frame)

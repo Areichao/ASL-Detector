@@ -2,26 +2,34 @@ import cv2 as cv
 import numpy as np
 import tensorflow_hub as hub 
 
-## *************************** MODEL IMPORTING ************************************
-model = hub.KerasLayer("https://www.kaggle.com/models/sayannath235/american-sign-language/TensorFlow2/american-sign-language/1")
+## *************************** MAIN FUNCTION ************************************
+def main() -> None:
+    """ main function INIT and execution """
 
-# CHECK IF THE MODEL WAS IMPORTED PROPERLY
-try:
-    print("Model loaded successfully!")
-    
-    # Check the type of the model (should be a Keras Layer)
-    print("Model type:", type(model))
-    
-except Exception as e:
-    print(f"Error loading the model: {e}")
+    ## *************************** MODEL IMPORTING ************************************
+    model = hub.KerasLayer("https://www.kaggle.com/models/sayannath235/american-sign-language/TensorFlow2/american-sign-language/1")
 
-## ***************************** GLOBAL VARIABLES AND CLASS DEFINITION *************************************
-classes = {
-    1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I',
-    10: 'J', 11: 'K', 12: 'L', 13: 'M', 14: 'N', 15: 'O', 16: 'P', 17: 'Q',
-    18: 'R', 19: 'S', 20: 'T', 21: 'U', 22: 'V', 23: 'W', 24: 'X', 25: 'Y',
-    26: 'Z', 27: 'del', 28: 'space', 29: 'nothing'
-}
+    # CHECK IF THE MODEL WAS IMPORTED PROPERLY
+    try:
+        print("Model loaded successfully!")
+        
+        # Check the type of the model (should be a Keras Layer)
+        print("Model type:", type(model))
+        
+    except Exception as e:
+        print(f"Error loading the model: {e}")
+
+    ## ***************************** GLOBAL VARIABLES AND CLASS DEFINITION *************************************
+    classes = {
+        1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I',
+        10: 'J', 11: 'K', 12: 'L', 13: 'M', 14: 'N', 15: 'O', 16: 'P', 17: 'Q',
+        18: 'R', 19: 'S', 20: 'T', 21: 'U', 22: 'V', 23: 'W', 24: 'X', 25: 'Y',
+        26: 'Z', 27: 'del', 28: 'space', 29: 'nothing'
+    }
+
+    ## **************************** APPLICATION CALL **********************************************
+    printImage(model, classes)
+# captureVideo()
 
 ## *************************** FUNCTION CALLS -> private & helper functions ************************************
 
@@ -55,6 +63,7 @@ def normalizePixels(frame: np.ndarray) -> np.ndarray:
 def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
+
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def captureVideo() -> None:
@@ -91,8 +100,8 @@ def captureVideo() -> None:
     cv.destroyAllWindows()
 
 
-def printImage() -> None:
-    """ prints out an image """
+def printImage(model: hub.KerasLayer, classes: dict) -> None:
+    """ prints out an image and runs classification function on it"""
     # gets a path to image and returns a matrix of pixels
     try:
         imgPath = './testImages/'
@@ -129,5 +138,7 @@ def printImage() -> None:
     except Exception as e:
         print(f"Error during prediction: {e}")
 
-printImage()
-# captureVideo()
+
+## ****************************** RUNNING MAIN FUNCTION ********************************
+if __name__ == "__main__":
+    main()

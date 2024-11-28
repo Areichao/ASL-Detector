@@ -29,7 +29,7 @@ def main() -> None:
         26: 'Z', 27: 'del', 28: 'space', 29: 'nothing'
     }
 
-    frameQ = Queue(maxsize=5)
+    frameQ = Queue(maxsize=10)
 
     ## **************************** APPLICATION CALL **********************************************
     # printImage(model, classes)
@@ -106,7 +106,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, frameQ: Queue) -> None:
             print("Error: could not open webcam")
             return         
         
-        changeRes(capture, 480, 340) # change resolution of camera
+        changeRes(capture, 640, 480) # change resolution of camera
 
         # Start video capture thread
         capture_thread = threading.Thread(target=videoThreading, args=(capture, frameQ))
@@ -163,7 +163,7 @@ def videoClassification(model: hub.KerasLayer, classes: dict, frameQ: Queue) -> 
                 
                 # if count % 5 == 0:
                 #     # display image as new window
-                #     cv.imshow('ASL', frame)
+                cv.imshow('ASL', frame)
                 
                 # count += 1 # count up number of frames
 
@@ -175,9 +175,6 @@ def videoClassification(model: hub.KerasLayer, classes: dict, frameQ: Queue) -> 
         
             except Exception as e:
                 print(f"Error during prediction: {e}")
-
-            finally:
-                cv.destroyAllWindows()  # Close all OpenCV windows properly
 
 
 def printImage(model: hub.KerasLayer, classes: dict) -> None:

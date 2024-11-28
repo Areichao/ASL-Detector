@@ -62,18 +62,45 @@ def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
 
+def createHandMask(frame: np.ndarray) -> np.ndarray:
+    """
+    Creates a black-and-white mask to isolate the hand based on skin color in the frame.
+    """
+    # Convert to HSV color space
+    hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+
+    # Define skin color range in HSV
+    lower_skin = np.array([0, 20, 70], dtype=np.uint8)
+    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
+
+    # Create a binary mask where skin color falls within the range
+    skin_mask = cv.inRange(hsv_frame, lower_skin, upper_skin)
+
+    # Apply morphological operations to clean up the mask
+    kernel = np.ones((5, 5), np.uint8)
+    skin_mask = cv.morphologyEx(skin_mask, cv.MORPH_CLOSE, kernel)
+
+    return skin_mask
+
+
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
-    """ Capture webcam video """
+    """Capture webcam video and classify ASL letters with improved hand isolation."""
     try:
         capture = cv.VideoCapture(0)
-        # error if video is not opened
         if not capture.isOpened():
             print("Error: could not open webcam")
             return 
-    
-        changeRes(capture, 640, 480) # change resolution of camera
+        
+        changeRes(capture, 640, 480)  # Change resolution of the camera
+
+        # Background subtractor to focus on moving objects
+        bg_subtractor = cv.createBackgroundSubtractorMOG2(history=50, varThreshold=50, detectShadows=False)
+
+        # HSV range for skin color
+        lower_skin = np.array([0, 20, 70], dtype=np.uint8)
+        upper_skin = np.array([20, 255, 255], dtype=np.uint8)
 
         while True:
             ret, frame = capture.read()
@@ -81,35 +108,70 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
                 print("Error: Failed to capture frame.")
                 break
 
-            # run the model here (create new instance of the frame)
-            # rescale image -> create a frame version for just the model to test on
-            frameModel = modelFrameSize(frame, 224, 224) # change to 224 by 224 -> required by model
-            frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
-            frameModel = addExtraDimension(frameModel) # add an extra dimension
+            # Step 1: Apply background subtraction to isolate motion
+            fg_mask = bg_subtractor.apply(frame)
 
-            try:
-                # get prediction from model -> using copy of image that is changed
-                prediction = model(frameModel)
-                predictionKey = np.argmax(prediction.numpy())
-                predictedClass = classes[predictionKey + 1]
-                print("Prediction done by model on image by percentage: ", prediction)
-                print("Prediction done by model final result: ", predictedClass)
+            # Step 2: Convert to HSV and apply skin detection
+            hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+            skin_mask = cv.inRange(hsv_frame, lower_skin, upper_skin)
 
-                # display original frame & add Text 
-                textCoordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
-                addText(frame, predictedClass, textCoordinates, (0, 255, 0))
+            # Step 3: Combine motion mask and skin mask
+            combined_mask = cv.bitwise_and(fg_mask, skin_mask)
 
-                # display image as new window
-                cv.imshow('ASL', frame)
+            # Step 4: Apply morphological operations to clean the mask
+            kernel = np.ones((5, 5), np.uint8)
+            combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_CLOSE, kernel)
+            combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_OPEN, kernel)
 
-                # keyboard binding (ms)-> 0 means it waits infinite amount of time for key to be pressed
-                # cv.waitKey(0)
-                # Wait for a key press, exit on 'q'
-                if cv.waitKey(1) & 0xFF == ord('q'):
-                    break
-        
-            except Exception as e:
-                print(f"Error during prediction: {e}")
+            # Step 5: Find contours
+            contours, _ = cv.findContours(combined_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+            hand_region = None
+            for contour in contours:
+                # Filter by contour area
+                if cv.contourArea(contour) > 3000:  # Adjust based on your setup
+                    # Get the bounding box
+                    x, y, w, h = cv.boundingRect(contour)
+                    aspect_ratio = w / float(h)
+
+                    # Filter by aspect ratio and size
+                    if 0.8 < aspect_ratio < 2.0:  # Typical aspect ratio for hands
+                        hand_region = frame[y:y+h, x:x+w]  # Crop the hand region
+                        break
+
+            if hand_region is not None:
+                # Step 6: Resize and normalize the hand region for the model
+                frameModel = modelFrameSize(hand_region, 224, 224)  # Resize to 224x224
+                frameModel = normalizePixels(frameModel)            # Normalize pixels (0 to 1 value)
+                frameModel = addExtraDimension(frameModel)          # Add an extra dimension
+
+                try:
+                    # Step 7: Get prediction from the model
+                    prediction = model(frameModel)
+                    predictionKey = np.argmax(prediction.numpy())
+                    predictedClass = classes[predictionKey + 1]
+                    print("Prediction done by model on image by percentage: ", prediction)
+                    print("Prediction done by model final result: ", predictedClass)
+
+                    # Display the hand region with prediction text
+                    textCoordinates = (10, 30)
+                    addText(hand_region, predictedClass, textCoordinates, (0, 255, 0))
+
+                    # Show the hand-only region
+                    cv.imshow('ASL Detection (Hand Only)', hand_region)
+
+                except Exception as e:
+                    print(f"Error during prediction: {e}")
+
+            else:
+                print("No hand detected.")
+
+            # Step 8: Show the processed mask for debugging
+            cv.imshow('Mask', combined_mask)
+
+            # Wait for a key press, exit on 'q'
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -118,6 +180,8 @@ def captureVideo(model: hub.KerasLayer, classes: dict) -> None:
         # Release the capture object and close windows
         capture.release()
         cv.destroyAllWindows()
+
+
 
 
 def printImage(model: hub.KerasLayer, classes: dict) -> None:

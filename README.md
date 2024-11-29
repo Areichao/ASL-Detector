@@ -3,3 +3,5 @@ CPS-843 Term project
 
 
 https://www.kaggle.com/models/sayannath235/american-sign-language/
+
+start pip install -r requirements.txt

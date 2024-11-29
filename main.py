@@ -68,6 +68,7 @@ def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
 
+
 def drawRectangle(width: int, height: int) -> tuple[int, int, int, int]:
     """ draws a rectangle where the model can read best from """
 

@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow_hub as hub 
 import mediapipe as mp
 from scipy.special import softmax
+from scipy.special import softmax
 
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:
@@ -12,6 +13,8 @@ def main() -> None:
     try:
         model = hub.KerasLayer("https://www.kaggle.com/models/sayannath235/american-sign-language/TensorFlow2/american-sign-language/1")
         print("Model loaded successfully!")
+        input_shape = model.input_shape
+        print(input_shape)
         
         # Check the type of the model (should be a Keras Layer)
         print("Model type:", type(model))
@@ -81,15 +84,13 @@ def drawRectangle(width: int, height: int) -> tuple[int, int, int, int]:
 
     return (topLeftX, topLeftY, bottomRightX, bottomRightY)
 
-def preprocess_frame(frame: np.ndarray) -> np.ndarray:
-    """Applies grayscaling and Gaussian filtering to the frame."""
-    # Grayscale the frame
-    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+def preprocessFrame(frame: np.ndarray) -> np.ndarray:
+    """Applies Gaussian filtering to the frame."""
     
     # Apply Gaussian blur
-    blurred_frame = cv.GaussianBlur(gray_frame, (5, 5), 0)
+    blurredFrame = cv.GaussianBlur(frame, (5, 5), 0)
     
-    return blurred_frame
+    return blurredFrame
 
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
@@ -173,8 +174,8 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
             # if hand is in frame
             if handinFrame:
                 region = frame[staticTopLeftY:staticBottomRightY, staticTopLeftX:staticBottomRightX]
-                preprocessed_frame = preprocess_frame(region)
-                frameModel = modelFrameSize(region, 224, 224)  # change to 224 by 224 -> required by model
+                preprocessedFrame = preprocessFrame(region)
+                frameModel = modelFrameSize(preprocessedFrame, 224, 224)  # change to 224 by 224 -> required by model
                 frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
                 frameModel = addExtraDimension(frameModel) # add an extra dimension
 
@@ -189,7 +190,10 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                         print(f"Prediction done by model final result: {predictedClass}")
 
                     # Display original frame & add Text
+                    # Display original frame & add Text
                     textCoordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
+                    predictionText = f"{predictedClass} - {predictionPercentage:.2f}%"
+                    addText(frame, predictionText, textCoordinates, (0, 255, 0))
                     predictionText = f"{predictedClass} - {predictionPercentage:.2f}%"
                     addText(frame, predictionText, textCoordinates, (0, 255, 0))
 

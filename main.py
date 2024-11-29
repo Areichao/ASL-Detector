@@ -110,8 +110,6 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
         # static 224 by 224 green square on frame
         staticTopLeftX, staticTopLeftY, staticBottomRightX, staticBottomRightY = drawRectangle(width, height)
 
-        trajectory = [] 
-
         while True:
             ret, frame = capture.read()
             if not ret:

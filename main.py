@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 import tensorflow_hub as hub 
 import mediapipe as mp
+from scipy.special import softmax
 
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:
@@ -80,6 +81,16 @@ def drawRectangle(width: int, height: int) -> tuple[int, int, int, int]:
 
     return (topLeftX, topLeftY, bottomRightX, bottomRightY)
 
+def preprocess_frame(frame: np.ndarray) -> np.ndarray:
+    """Applies grayscaling and Gaussian filtering to the frame."""
+    # Grayscale the frame
+    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    
+    # Apply Gaussian blur
+    blurred_frame = cv.GaussianBlur(gray_frame, (5, 5), 0)
+    
+    return blurred_frame
+
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.hands, hands: mp.solutions.hands.Hands, mpDraw: mp.solutions.drawing_utils) -> None:
@@ -99,6 +110,8 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
         # static 224 by 224 green square on frame
         staticTopLeftX, staticTopLeftY, staticBottomRightX, staticBottomRightY = drawRectangle(width, height)
 
+        trajectory = [] 
+
         while True:
             ret, frame = capture.read()
             if not ret:
@@ -109,6 +122,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
             handRGB = hands.process(rgbFrame)
 
             handinFrame = False # flag
+            predictedClass = "nothing" # default prediction
             topLeftX, topLeftY = width, height # right bottom corner -> reset each loop
             bottomRightX, bottomRightY = 0, 0 # top left corner -< reset each loop
 
@@ -133,10 +147,10 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     handinFrame = True
                     # mpDraw.draw_landmarks(frame, handPoints, mpHands.HAND_CONNECTIONS) # draw dots and lines on hand
                     cv.rectangle(frame, (topLeftX, topLeftY), (bottomRightX, bottomRightY), (0, 255, 0), 2)
-            
             # if hand is in frame
             if handinFrame:
                 region = frame[staticTopLeftY:staticBottomRightY, staticTopLeftX:staticBottomRightX]
+                preprocessed_frame = preprocess_frame(region)
                 frameModel = modelFrameSize(region, 224, 224)  # change to 224 by 224 -> required by model
                 frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
                 frameModel = addExtraDimension(frameModel) # add an extra dimension
@@ -146,12 +160,14 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     prediction = model(frameModel)
                     predictionKey = np.argmax(prediction.numpy())
                     predictedClass = classes[predictionKey + 1]
-                    print("Prediction done by model on image by percentage: ", prediction)
-                    print("Prediction done by model final result: ", predictedClass)
+                    predictionPercentage = np.max(prediction.numpy()) * 100  # Convert to percentage
+                    print(f"Prediction done by model on image by percentage: {predictionPercentage}%")
+                    print(f"Prediction done by model final result: {predictedClass}")
 
-                    # display original frame & add Text 
+                    # Display original frame & add Text
                     textCoordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
-                    addText(frame, predictedClass, textCoordinates, (0, 255, 0))
+                    predictionText = f"{predictedClass} - {predictionPercentage:.2f}%"
+                    addText(frame, predictionText, textCoordinates, (0, 255, 0))
 
                     # Draw the bounding box on the frame
                     cv.rectangle(frame, (staticTopLeftX, staticTopLeftY), (staticBottomRightX, staticBottomRightY), (0, 255, 0), 2)

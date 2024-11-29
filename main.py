@@ -150,25 +150,25 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     cv.rectangle(frame, (topLeftX, topLeftY), (bottomRightX, bottomRightY), (0, 255, 0), 2)
                     
                     # Extract the trajectory of the index finger tip
-                    index_tip = handPoints.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP]
-                    x, y = int(index_tip.x * width), int(index_tip.y * height)
-                    trajectory.append((x, y))
-                    if len(trajectory) > 20:
-                        trajectory.pop(0)
+                    index_tip = handPoints.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP] # get points of finger
+                    x, y = int(index_tip.x * width), int(index_tip.y * height) # get normalized coordinates and make them regular pixel coordinate values
+                    trajectory.append((x, y)) # append pixel coordinates to queue
+                    if len(trajectory) > 10: # make sure we have the most recent coordinates
+                        trajectory.pop(0) # removes oldest point
 
-                    # Draw trajectory
+                    # Draw trajectory line (draws lines between each point)
                     for i in range(1, len(trajectory)):
-                        cv.line(frame, trajectory[i - 1], trajectory[i], (255, 0, 0), 2)
+                        cv.line(frame, trajectory[i - 1], trajectory[i], (0, 255, 0), 2)
 
                     # Heuristic for 'J' and 'Z'
-                    if len(trajectory) >= 10:
-                        dx = trajectory[-1][0] - trajectory[0][0]
-                        dy = trajectory[-1][1] - trajectory[0][1]
+                    if len(trajectory) >= 7:
+                        distancex = trajectory[-1][0] - trajectory[0][0] # displacement between first and last point (x)
+                        distancey = trajectory[-1][1] - trajectory[0][1] # same thing but for the y points
 
-                        if dx < 0 and dy > 0 and abs(dx) > abs(dy):  # 'J' gesture
-                            predictedClass = "J"
-                        elif dx > 0 and dy < 0 and abs(dx) > abs(dy):  # 'Z' gesture
-                            predictedClass = "Z"
+                        if distancex < 0 and distancey > 0 and abs(distancex) > abs(distancey):
+                            predictedClass = "J" # left and down movement (J shape)
+                        elif distancex > 0 and distancey < 0 and abs(distancex) > abs(distancey):
+                            predictedClass = "Z" # right and upwards movement (Z shape)
 
             
             # if hand is in frame

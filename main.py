@@ -68,11 +68,9 @@ def addExtraDimension(frame: np.ndarray) -> np.ndarray:
     """ Takes a frame or image and adds an extra dimension to represent batch size"""
     return np.expand_dims(frame, axis=0)
 
-def drawRectangle(frame: np.ndarray) -> tuple[int, int, int, int]:
-    """ draws a rectangle around the models subject """
+def drawRectangle(width: int, height: int) -> tuple[int, int, int, int]:
+    """ draws a rectangle where the model can read best from """
 
-    # Define the Region of Interest (region) box coordinates (area that is read by model)
-    height, width, _ = frame.shape
     boxSize = 224  # The size of the box (fit for model)
     topLeftX = (width - boxSize) // 2
     topLeftY = (height - boxSize) // 2
@@ -91,12 +89,14 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
         if not capture.isOpened():
             print("Error: could not open webcam")
             return 
-    
-        changeRes(capture, 640, 480) # change resolution of camera
-        h, w, _ = frame.shape # height and width of current frame is captured (general incase we change resolution after)
+
+        height = 480
+        width = 640
+        changeRes(capture, width, height) # change resolution of camera
         padding = 10 # padding for box around hand
-        bottomRightX, bottomRightY = 0, 0 # top left corner
-        topLeftX, topLeftY = w, h # right bottom corner
+
+        # static 224 by 224 green square on frame
+        staticTopLeftX, staticTopLeftY, staticBottomRightX, staticBottomRightY = drawRectangle(width, height)
 
         while True:
             ret, frame = capture.read()
@@ -108,12 +108,14 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
             handRGB = hands.process(rgbFrame)
 
             handinFrame = False # flag
+            topLeftX, topLeftY = width, height # right bottom corner -> reset each loop
+            bottomRightX, bottomRightY = 0, 0 # top left corner -< reset each loop
 
             # get box and dots for hand in camera
             if handRGB.multi_hand_landmarks:
                 for handPoints in handRGB.multi_hand_landmarks:
                     for i in handPoints.landmark: # iterate 21 landmarks for the hand
-                        x, y = int(i.x * w), int(i.y * h) # i in range [0,1] is converted into pixel value
+                        x, y = int(i.x * width), int(i.y * height) # i in range [0,1] is converted into pixel value
                         # figure out box dimensions
                         topLeftX = min(topLeftX, x)
                         topLeftY = min(topLeftY, y)
@@ -123,8 +125,8 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     # padding for boxes is added for clearer hand boxing
                     topLeftX = max(topLeftX - padding, 0)
                     topLeftY = max(topLeftY - padding, 0)
-                    bottomRightX = min(bottomRightX + padding, w)
-                    bottomRightY = min(bottomRightY + padding, h)
+                    bottomRightX = min(bottomRightX + padding, width)
+                    bottomRightY = min(bottomRightY + padding, height)
 
                     handinFrame = True
 
@@ -133,10 +135,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
             
             # if hand is in frame
             if handinFrame:
-                topLeftX, topLeftY, bottomRightX, bottomRightY = drawRectangle(frame)
-
-                # # create a frame just for model to extract information from
-                region = frame[topLeftY:bottomRightY, topLeftX:bottomRightX]
+                region = frame[staticTopLeftY:staticBottomRightY, staticTopLeftX:staticBottomRightX]
                 frameModel = modelFrameSize(region, 224, 224)  # change to 224 by 224 -> required by model
                 frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
                 frameModel = addExtraDimension(frameModel) # add an extra dimension
@@ -154,7 +153,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     addText(frame, predictedClass, textCoordinates, (0, 255, 0))
 
                     # Draw the bounding box on the frame
-                    cv.rectangle(frame, (topLeftX, topLeftY), (bottomRightX, bottomRightY), (0, 255, 0), 2)
+                    cv.rectangle(frame, (staticTopLeftX, staticTopLeftY), (staticBottomRightX, staticBottomRightY), (0, 255, 0), 2)
 
                 except Exception as e:
                     print(f"Error during prediction: {e}")

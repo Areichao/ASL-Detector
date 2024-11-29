@@ -121,6 +121,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                         topLeftY = min(topLeftY, y)
                         bottomRightX = max(bottomRightX, x)
                         bottomRightY = max(bottomRightY, y)
+                        # cv.circle(frame, (x, y), 5, (0, 255, 0), -1)  # Green dots for landmark
 
                     # padding for boxes is added for clearer hand boxing
                     topLeftX = max(topLeftX - padding, 0)
@@ -129,8 +130,7 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                     bottomRightY = min(bottomRightY + padding, height)
 
                     handinFrame = True
-
-                    mpDraw.draw_landmarks(frame, handPoints, mpHands.HAND_CONNECTIONS) # draw dots and lines on hand
+                    # mpDraw.draw_landmarks(frame, handPoints, mpHands.HAND_CONNECTIONS) # draw dots and lines on hand
                     cv.rectangle(frame, (topLeftX, topLeftY), (bottomRightX, bottomRightY), (0, 255, 0), 2)
             
             # if hand is in frame

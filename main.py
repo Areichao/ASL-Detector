@@ -28,18 +28,18 @@ def main() -> None:
     }
 
     # mediahands initialization
-    mpHands = mp.solutions.hands
-    hands = mpHands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7)
-    mpDraw = mp.solutions.drawing_utils
+    mp_hands = mp.solutions.hands
+    hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7)
+    mp_draw = mp.solutions.drawing_utils
 
     ## **************************** APPLICATION CALL **********************************************
-    # printImage(model, classes)
-    captureVideo(model, classes, mpHands, hands, mpDraw)
+    # print_image(model, classes)
+    capture_video(model, classes, mp_hands, hands, mp_draw)
 
 ## *************************** FUNCTION CALLS -> private & helper functions ************************************
 
-def rescaleFrame(frame: np.ndarray, scale: float = 0.75) -> np.ndarray:
-    """ Takes a frame and scales it by certain size (default 0.75). works for images, videos, and live videos"""
+def rescale_frame(frame: np.ndarray, scale: float = 0.75) -> np.ndarray:
+    """ Scales a frame by a certain size (default 0.75) """
     width = int(frame.shape[1] * scale) # width of image
     height = int(frame.shape[0] * scale) # height of image
     dimensions = (width, height)
@@ -47,51 +47,45 @@ def rescaleFrame(frame: np.ndarray, scale: float = 0.75) -> np.ndarray:
     return cv.resize(frame, dimensions, interpolation= cv.INTER_AREA)
 
 # MIGHT NEED TO CHANGE THIS LATER INCASE VALUE IS NOT JUST A SQUARE
-def modelFrameSize(frame: np.ndarray, width: int = 224, height: int = 224) -> np.ndarray:
+def model_frame_size(frame: np.ndarray, width: int = 224, height: int = 224) -> np.ndarray:
     """ Takes a frame or image and scales it to be 224 by 224 (max) for the model to process """
     dimensions = (width, height)
     return cv.resize(frame, dimensions, interpolation = cv.INTER_AREA)
 
-def changeRes(capture: cv.VideoCapture, width: int, height: int) -> None:
-    """Only works for live videos (webcam)"""
+def change_resolution(capture: cv.VideoCapture, width: int, height: int) -> None:
+    """ Changes resolution for live videos (webcam) """
     capture.set(3, width) # number is property. 3 is width, 4 is height
     capture.set(4, height)
 
-def addText(frame: np.ndarray, text: str, origin: tuple[int, int], colour: tuple[int, int, int], scale: float = 1.0, thickness: int = 2) -> None:
-    """Adds a text onto the frame/image in triplex font"""
+def add_text_on_frame(frame: np.ndarray, text: str, origin: tuple[int, int], colour: tuple[int, int, int], scale: float = 1.0, thickness: int = 2) -> None:
+    """ Adds text onto the frame/image in triplex font """
     cv.putText(frame, text, origin, cv.FONT_HERSHEY_TRIPLEX, scale, colour, thickness)
 
-def normalizePixels(frame: np.ndarray) -> np.ndarray:
-    """ Takes a frame or image and normalizes the pixels (value between 0 to 1)"""
+def normalize_pixels(frame: np.ndarray) -> np.ndarray:
+    """ Takes a frame/image and normalizes the pixels (value between 0 to 1) """
     return frame.astype(np.float32) / 255.0
 
-def addExtraDimension(frame: np.ndarray) -> np.ndarray:
-    """ Takes a frame or image and adds an extra dimension to represent batch size"""
+def add_extra_dimension(frame: np.ndarray) -> np.ndarray:
+    """ Takes a frame/image and adds an extra dimension to represent batch size """
     return np.expand_dims(frame, axis=0)
 
+def draw_rectangle(width: int, height: int) -> tuple[int, int, int, int]:
+    """ Draws a rectangle where the model can read best from """
+    box_size = 224  # The size of the box (fit for model)
+    top_left_X = (width - box_size) // 2
+    top_left_Y = (height - box_size) // 2
+    bottom_right_X = top_left_X + box_size
+    bottom_right_Y = top_left_Y + box_size
 
-def drawRectangle(width: int, height: int) -> tuple[int, int, int, int]:
-    """ draws a rectangle where the model can read best from """
+    return (top_left_X, top_left_Y, bottom_right_X, bottom_right_Y)
 
-    boxSize = 224  # The size of the box (fit for model)
-    topLeftX = (width - boxSize) // 2
-    topLeftY = (height - boxSize) // 2
-    bottomRightX = topLeftX + boxSize
-    bottomRightY = topLeftY + boxSize
-
-    return (topLeftX, topLeftY, bottomRightX, bottomRightY)
-
-def preprocessFrame(frame: np.ndarray) -> np.ndarray:
-    """Applies Gaussian filtering to the frame."""
-    
-    # Apply Gaussian blur
-    blurredFrame = cv.GaussianBlur(frame, (5, 5), 0)
-    
-    return blurredFrame
-
+def filter_frame(frame: np.ndarray) -> np.ndarray:
+    """ Applies Gaussian filtering to the frame """
+    blurred_frame = cv.GaussianBlur(frame, (5, 5), 0)
+    return blurred_frame
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
-def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.hands, hands: mp.solutions.hands.Hands, mpDraw: mp.solutions.drawing_utils) -> None:
+def capture_video(model: hub.KerasLayer, classes: dict, mp_hands: mp.solutions.hands, hands: mp.solutions.hands.Hands, mp_draw: mp.solutions.drawing_utils) -> None:
     """ Capture webcam video """
     try:
         capture = cv.VideoCapture(0)
@@ -102,11 +96,11 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
 
         height = 480
         width = 640
-        changeRes(capture, width, height) # change resolution of camera
+        change_resolution(capture, width, height) # change resolution of camera
         padding = 10 # padding for box around hand
 
-        # static 224 by 224 green square on frame
-        staticTopLeftX, staticTopLeftY, staticBottomRightX, staticBottomRightY = drawRectangle(width, height)
+        # drawing static 224 by 224 green square on frame (for model input)
+        static_top_left_X, static_top_left_Y, static_bottom_right_X, static_bottom_right_Y = draw_rectangle(width, height)
 
         while True:
             ret, frame = capture.read()
@@ -114,62 +108,67 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
                 print("Error: Failed to capture frame.")
                 break
 
-            rgbFrame = cv.cvtColor(frame, cv.COLOR_BGR2RGB) # convert from BGR (cv default) to RGB (mediapipe default)
-            handRGB = hands.process(rgbFrame)
+            rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB) # convert from BGR (cv default) to RGB (mediapipe default)
+            hand_RGB = hands.process(rgb_frame)
 
-            handinFrame = False # flag
-            predictedClass = "nothing" # default prediction
-            topLeftX, topLeftY = width, height # right bottom corner -> reset each loop
-            bottomRightX, bottomRightY = 0, 0 # top left corner -< reset each loop
+            predicted_class = "nothing" # default prediction
 
             # get box and dots for hand in camera
-            if handRGB.multi_hand_landmarks:
-                for handPoints in handRGB.multi_hand_landmarks:
-                    for i in handPoints.landmark: # iterate 21 landmarks for the hand
+            if hand_RGB.multi_hand_landmarks:
+                for hand_points in hand_RGB.multi_hand_landmarks:
+                    # dynamic sizing of box around hand based on landmarks
+                    top_left_X, top_left_Y = width, height # right bottom corner -> reset each loop
+                    bottom_right_X, bottom_right_Y = 0, 0 # top left corner -< reset each loop
+
+                    for i in hand_points.landmark: # iterate 21 landmarks for the hand
                         x, y = int(i.x * width), int(i.y * height) # i in range [0,1] is converted into pixel value
                         # figure out box dimensions
-                        topLeftX = min(topLeftX, x)
-                        topLeftY = min(topLeftY, y)
-                        bottomRightX = max(bottomRightX, x)
-                        bottomRightY = max(bottomRightY, y)
+                        top_left_X = min(top_left_X, x)
+                        top_left_Y = min(top_left_Y, y)
+                        bottom_right_X = max(bottom_right_X, x)
+                        bottom_right_Y = max(bottom_right_Y, y)
                         # cv.circle(frame, (x, y), 5, (0, 255, 0), -1)  # Green dots for landmark
 
                     # padding for boxes is added for clearer hand boxing
-                    topLeftX = max(topLeftX - padding, 0)
-                    topLeftY = max(topLeftY - padding, 0)
-                    bottomRightX = min(bottomRightX + padding, width)
-                    bottomRightY = min(bottomRightY + padding, height)
+                    top_left_X = max(top_left_X - padding, 0)
+                    top_left_Y = max(top_left_Y - padding, 0)
+                    bottom_right_X = min(bottom_right_X + padding, width)
+                    bottom_right_Y = min(bottom_right_Y + padding, height)
 
-                    handinFrame = True
-                    # mpDraw.draw_landmarks(frame, handPoints, mpHands.HAND_CONNECTIONS) # draw dots and lines on hand
-                    cv.rectangle(frame, (topLeftX, topLeftY), (bottomRightX, bottomRightY), (0, 255, 0), 2)
-            # if hand is in frame
-            if handinFrame:
-                region = frame[staticTopLeftY:staticBottomRightY, staticTopLeftX:staticBottomRightX]
-                preprocessedFrame = preprocessFrame(region)
-                frameModel = modelFrameSize(preprocessedFrame, 224, 224)  # change to 224 by 224 -> required by model
-                frameModel = normalizePixels(frameModel) # normalize pixels (0 to 1 value)
-                frameModel = addExtraDimension(frameModel) # add an extra dimension
+                    # mpDraw.draw_landmarks(frame, hand_points, mpHands.HAND_CONNECTIONS) # draw dots and lines on hand
+
+                    # drawing box around hand
+                    cv.rectangle(frame, (top_left_X, top_left_Y), (bottom_right_X, bottom_right_Y), (0, 255, 0), 2)
+                    
+                # gesture detection
+                region = frame[static_top_left_Y:static_bottom_right_Y, static_top_left_X:static_bottom_right_X]
+                filtered_frame = filter_frame(region)
+                frame_model = model_frame_size(filtered_frame, 224, 224)  # change to 224 by 224 -> required by model
+                frame_model = normalize_pixels(frame_model) # normalize pixels (0 to 1 value)
+                frame_model = add_extra_dimension(frame_model) # add an extra dimension
 
                 try:
                     # get prediction from model -> using copy of image that is changed
-                    prediction = model(frameModel)
-                    predictionKey = np.argmax(prediction.numpy())
-                    predictedClass = classes[predictionKey + 1]
-                    predictionPercentage = np.max(prediction.numpy()) * 100  # Convert to percentage
-                    print(f"Prediction done by model on image by percentage: {predictionPercentage}%")
-                    print(f"Prediction done by model final result: {predictedClass}")
+                    prediction = model(frame_model).numpy() # convert to numpy array
+                    probabilities = prediction[0] # get array of probabilities for all classes
+                    prediction_key = np.argmax(probabilities) # get index of highest probability
+                    predicted_class = classes[prediction_key + 1] # get class label
 
-                    # Display original frame & add Text
-                    textCoordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
-                    predictionText = f"{predictedClass} - {predictionPercentage:.2f}%"
-                    addText(frame, predictionText, textCoordinates, (0, 255, 0))
+                    # calculating percentage for each class
+                    percentages = probabilities * 100
+                    most_likely_percentage = percentages[prediction_key]
+                    print(f"Predicted Class: {predicted_class} ({most_likely_percentage:.2f}%)")
+                    print("All class probabilities:", percentages)
 
-                    # Draw the bounding box on the frame
-                    cv.rectangle(frame, (staticTopLeftX, staticTopLeftY), (staticBottomRightX, staticBottomRightY), (0, 255, 0), 2)
+                    # display original frame & add text for most confident class
+                    text_coordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
+                    add_text_on_frame(frame, f"{predicted_class} ({most_likely_percentage:.2f}%)", text_coordinates, (0, 255, 0))
 
                 except Exception as e:
                     print(f"Error during prediction: {e}")
+
+            # draw static box on the frame
+            cv.rectangle(frame, (static_top_left_X, static_top_left_Y), (static_bottom_right_X, static_bottom_right_Y), (0, 255, 0), 2)
 
             # display image as new window
             cv.imshow('ASL', frame)
@@ -189,12 +188,12 @@ def captureVideo(model: hub.KerasLayer, classes: dict, mpHands: mp.solutions.han
         cv.destroyAllWindows()
 
 
-def printImage(model: hub.KerasLayer, classes: dict) -> None:
+def print_image(model: hub.KerasLayer, classes: dict) -> None:
     """ prints out an image and runs classification function on it"""
     # gets a path to image and returns a matrix of pixels
     try:
-        imgPath = './testImages/'
-        img = cv.imread(imgPath + "A.png")
+        img_path = './testImages/'
+        img = cv.imread(img_path + "A.png")
         if img is None:
             print("Error: image not found")
             return 
@@ -203,22 +202,22 @@ def printImage(model: hub.KerasLayer, classes: dict) -> None:
         return   
 
     # rescale image -> create a frame version for just the model to test on
-    imgModel = modelFrameSize(img, 224, 224) # change to 224 by 224 -> required by model
-    imgModel = normalizePixels(imgModel) # normalize pixels (0 to 1 value)
-    imgModel = addExtraDimension(imgModel) # add an extra dimension
+    img_model = model_frame_size(img, 224, 224) # change to 224 by 224 -> required by model
+    img_model = normalize_pixels(img_model) # normalize pixels (0 to 1 value)
+    img_model = add_extra_dimension(img_model) # add an extra dimension
 
     try:
         # get prediction from model -> using copy of image that is changed
-        prediction = model(imgModel)
-        predictionKey = np.argmax(prediction.numpy())
-        predictedClass = classes[predictionKey + 1]
+        prediction = model(img_model)
+        prediction_key = np.argmax(prediction.numpy())
+        predicted_class = classes[prediction_key + 1]
         print("Prediction done by model on image by percentage: ", prediction)
-        print("Prediction done by model final result: ", predictedClass)
+        print("Prediction done by model final result: ", predicted_class)
 
         # print original image
-        img = rescaleFrame(img, scale=2.0)
-        textCoordinates = (int(img.shape[1] * 0.05), int(img.shape[0] * 0.1))
-        addText(img, predictedClass, textCoordinates, (0, 255, 0))
+        img = rescale_frame(img, scale=2.0)
+        text_coordinates = (int(img.shape[1] * 0.05), int(img.shape[0] * 0.1))
+        add_text_on_frame(img, predicted_class, text_coordinates, (0, 255, 0))
         # display image as new window
         cv.imshow('ASL', img)
         cv.waitKey(0)

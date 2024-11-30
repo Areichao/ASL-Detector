@@ -35,8 +35,10 @@ Jessica Zhu
 
 Julia Khong
 - picked out keras ASL model
+- model precision testing & application user testing
 - drawn box tracking hand movement (mediapipe)
 - (attempted) precise hand joint movement (UI)
+- video demonstration of code
 - IEEE report
 
 

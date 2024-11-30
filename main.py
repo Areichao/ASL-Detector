@@ -2,7 +2,6 @@ import cv2 as cv
 import numpy as np
 import tensorflow_hub as hub 
 import mediapipe as mp
-from scipy.special import softmax
 
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:
@@ -14,7 +13,6 @@ def main() -> None:
         print("Model loaded successfully!")
         input_shape = model.input_shape
         print(input_shape)
-        
         # Check the type of the model (should be a Keras Layer)
         print("Model type:", type(model))
         

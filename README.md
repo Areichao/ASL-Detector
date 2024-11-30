@@ -24,6 +24,7 @@ Thao Nguyen
 - prediction confidence percentage scale
 - (attempted) moving J and Z model detection (mediapipe)
 - (attempted) algorithm speed optimization
+- video demonstration of code
 - report contribution
 
 Jessica Zhu
@@ -38,7 +39,7 @@ Julia Khong
 - model precision testing & application user testing
 - drawn box tracking hand movement (mediapipe)
 - (attempted) precise hand joint movement (UI)
-- video demonstration of code
+- Created the Installation guide
 - IEEE report
 
 

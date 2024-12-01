@@ -1,5 +1,5 @@
-# CPS843: Computer Vision - American Sign Language (ASL) Recognition
-CPS-843 Term project group 69
+# CPS-843: Computer Vision - American Sign Language (ASL) Recognition
+CPS-843 - Term project (group 69)
 
 # The dataset we used 
 https://www.kaggle.com/models/sayannath235/american-sign-language/

@@ -3,6 +3,10 @@ import numpy as np
 import tensorflow_hub as hub 
 import mediapipe as mp
 
+## for plotting class probabilities
+# import matplotlib.pyplot as plt 
+# from io import BytesIO
+
 ## *************************** MAIN FUNCTION ************************************
 def main() -> None:
     """ main function INIT and execution """
@@ -11,8 +15,7 @@ def main() -> None:
     try:
         model = hub.KerasLayer("https://www.kaggle.com/models/sayannath235/american-sign-language/TensorFlow2/american-sign-language/1")
         print("Model loaded successfully!")
-        input_shape = model.input_shape
-        print(input_shape)
+        
         # Check the type of the model (should be a Keras Layer)
         print("Model type:", type(model))
         
@@ -83,6 +86,28 @@ def filter_frame(frame: np.ndarray) -> np.ndarray:
     """ Applies Gaussian filtering to the frame """
     blurred_frame = cv.GaussianBlur(frame, (5, 5), 0)
     return blurred_frame
+
+# def plot_probabilities(probabilities: np.ndarray, classes: dict):
+#     """ Chart of class probabilities """
+#     class_labels = list(classes.values())
+   
+#     plt.figure(figsize=(6, 6))
+#     y_pos = np.arange(len(class_labels))
+#     plt.barh(y_pos, probabilities, color='skyblue')
+#     plt.yticks(y_pos, class_labels)
+#     plt.xlabel('Probability (%)')
+#     plt.title('Class Probabilities')
+#     plt.tight_layout()
+    
+#     # convert plot to image
+#     buf = BytesIO()
+#     plt.savefig(buf, format='png')
+#     buf.seek(0)
+#     img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+#     buf.close()
+#     plt.close()
+#     img = cv.imdecode(img_array, 1)
+#     return img
 
 ## ************************** GETTING IMAGE OR VIDEO ****************************************
 def capture_video(model: hub.KerasLayer, classes: dict, mp_hands: mp.solutions.hands, hands: mp.solutions.hands.Hands, mp_draw: mp.solutions.drawing_utils) -> None:
@@ -163,6 +188,12 @@ def capture_video(model: hub.KerasLayer, classes: dict, mp_hands: mp.solutions.h
                     # display original frame & add text for most confident class
                     text_coordinates = (int(frame.shape[1] * 0.05), int(frame.shape[0] * 0.1))
                     add_text_on_frame(frame, f"{predicted_class} ({most_likely_percentage:.2f}%)", text_coordinates, (0, 255, 0))
+                    
+                    ## display probabilities chart
+                    # probability_image = plot_probabilities(percentages, classes)
+                    # probability_image = rescale_frame(probability_image, scale=0.5)
+                    # x_offset, y_offset = 10, 10
+                    # frame[y_offset:y_offset + probability_image.shape[0], x_offset:x_offset + probability_image.shape[1]] = probability_image
 
                 except Exception as e:
                     print(f"Error during prediction: {e}")

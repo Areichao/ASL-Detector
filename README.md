@@ -1,4 +1,4 @@
-# cps-843-ComputerVision - American Sign Language (ASL) Recognition
+# CPS843: Computer Vision - American Sign Language (ASL) Recognition
 CPS-843 Term project group 69
 
 # The dataset we used 

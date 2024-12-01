@@ -5,7 +5,7 @@ CPS-843 Term project group 69
 https://www.kaggle.com/models/sayannath235/american-sign-language/
 
 # How to run
-open this code on some kind of environment
+open the project preferably in a virtual or conda environment
 pip install -r requirements.txt
 should run after this, may take up to a couple of minutes to load the program
 
@@ -20,10 +20,10 @@ Annabel Chao
 - report contribution
 
 Thao Nguyen
-- gaussian preprocessing for model
+- filter preprocessing for model
 - prediction confidence percentage scale
 - (attempted) moving J and Z model detection (mediapipe)
-- (attempted) algorithm speed optimization
+- (attempted) algorithm speed and prediction optimization
 - video demonstration of code
 - report contribution
 

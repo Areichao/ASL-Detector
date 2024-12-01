@@ -5,9 +5,9 @@ CPS-843 Term project group 69
 https://www.kaggle.com/models/sayannath235/american-sign-language/
 
 # How to run
-open the project preferably in a virtual or conda environment
-pip install -r requirements.txt
-should run after this, may take up to a couple of minutes to load the program
+- open the project preferably in a virtual or conda environment
+- install dependies via: pip install -r requirements.txt
+- should run after this, may take up to a couple of minutes to load the program
 
 # Individual Contribution
 Annabel Chao 

@@ -11,8 +11,8 @@ def main() -> None:
     try:
         model = hub.KerasLayer("https://www.kaggle.com/models/sayannath235/american-sign-language/TensorFlow2/american-sign-language/1")
         print("Model loaded successfully!")
-        input_shape = model.input_shape
-        print(input_shape)
+        # input_shape = model.input_shape
+        # print(input_shape)
         # Check the type of the model (should be a Keras Layer)
         print("Model type:", type(model))
         

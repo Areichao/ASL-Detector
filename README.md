@@ -1,7 +1,6 @@
-# CPS-843: Computer Vision - American Sign Language (ASL) Recognition
-CPS-843 - Term project (group 69)
+# Computer Vision - American Sign Language (ASL) Recognition
 
-# The dataset we used 
+# This project uses a pre-trained ASL model from kaggle as follows:
 https://www.kaggle.com/models/sayannath235/american-sign-language/
 
 # How to run
@@ -43,9 +42,19 @@ Julia Khong
 - IEEE report
 
 
-
 ## Contributor Information 
 
 | Annabel Chao  | Thao Nguyen | Jessica Zhu  | Julia Khong |
 | ------------- | ------------- | ------------- | ------------- |
-| annabel.chao@torontomu.ca  | thao2.nguyen@torontomu.ca  | jessica.zhu@torontomu.ca  | julia.khong@torontomu.ca  |
+| [@Areichao](https://github.com/Areichao) | [@thaothecow](https://github.com/thaothecow) | [@jessicaz831](https://github.com/jessicaz831) | [@P3anutz](https://github.com/P3anutz) |
+
+
+## Academic Context
+
+This project was developed as part of coursework at Toronto Metropolitan University (TMU).
+The assignment was open-ended, and the design and implementation of this project were independently developed by the author(s).
+This repository contains only the author's original code and does not include any proprietary course materials.
+
+The code in this repository is released under the MIT License. Any third-party
+models, datasets, or libraries used in this project remain under their own
+respective licenses and are not redistributed here.

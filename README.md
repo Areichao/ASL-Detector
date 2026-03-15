@@ -1,6 +1,6 @@
 # Computer Vision - American Sign Language (ASL) Recognition
 
-# This project uses a pre-trained ASL model from kaggle as follows:
+### This project uses a pre-trained ASL model from kaggle as follows:
 https://www.kaggle.com/models/sayannath235/american-sign-language/
 
 # How to run

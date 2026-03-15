@@ -41,6 +41,15 @@ Julia Khong
 - Created the Installation guide
 - IEEE report
 
+## Screenshots
+
+| B | K |
+|---|---|
+| <img src="outputImages/ASLB.png" width="300"> | <img src="outputImages/ASLK.png" width="300"> |
+
+| M | Z |
+|---|---|
+| <img src="outputImages/ASLM.png" width="300"> | <img src="outputImages/ASLZ.png" width="300"> |
 
 ## Contributor Information 
 
